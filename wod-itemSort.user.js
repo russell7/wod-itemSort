@@ -3,43 +3,51 @@
 // @namespace  org.holer.webgame.util.wod
 // @version    0.0.7
 // @description  auto sort items in inventory
-// @match      http://localhost/s.html
+// @match      http://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // @match      http://localhost/x.htm
 // @copyright  2012+, Russell
-// @require    http://code.jquery.com/jquery-1.7.1.min.js
 // ==/UserScript==
 
-$(function () {
-    loadUi();
-});
+var script = document.createElement('script');
+script.setAttribute("type", "application/javascript");
+script.setAttribute("src","http://code.jquery.com/jquery-1.7.1.min.js");
+var sie = document.body || document.head || document.documentElement;
+sie.appendChild(script);
 
-var selectHtml = '<select><option value="-go_lager">仓库</option><option value="go_group_2">团体仓库</option><option value="go_group">宝库</option><option value="go_keller">贮藏室</option><option value="npc">NPC</option></select>';
-var liHtml = '<li><input/>'+selectHtml+'<button onclick="addRule(this)">append</button><button onclick="addException(this)">exception</button><button onclick="deleteRule(this)">delete</button></li>';
-var olHtml = '<ol>'+liHtml+'</ol>';
-var bsHtml = '<button onclick="wisGenerateRuleJsonI()">generate rule</button><button onclick="wisSaveRule()">save rule</button><button onclick="wisLoadRule()">load rule</button><br>';
-var taHtml = '<textarea id="wiscj" style="width:80%;height:5em;"></textarea>';
-var uiHtml = '<hr><div id="wisc">'+olHtml+bsHtml+taHtml+'</div>';
-var abHtml = '<div><button onclick="applyWisRule()">apply</button></div>';
-
-function loadUi() {
-    $("div.gadget.main_content").after(uiHtml);
-    $("div.search_container").after(abHtml);
-
-    var script = document.createElement('script');
-    script.setAttribute("type", "application/javascript");
-    script.setAttribute("src","http://code.jquery.com/jquery-1.7.1.min.js");
-    var sie = document.body || document.head || document.documentElement;
-    sie.appendChild(script);
-
-    script = document.createElement('script');
-    script.appendChild(document.createTextNode('('+ main +')();'));
-    sie.appendChild(script);
-}
+script = document.createElement('script');
+script.appendChild(document.createTextNode('('+ main +')();'));
+sie.appendChild(script);
 
 function main() {
+    window.wisMsgg = {
+        applySortRule: "apply sort rules",
+        autoSort: "auto sort",
+        append: "append",
+        exception: "exception",
+        deleteStr: "delete",
+        generateRule: "generate rule",
+        saveRule: "save rule",
+        loadRule: "load rule"
+    };
+
+    window.wisMsg = {
+        applySortRule: "整理",
+        autoSort: "自动整理",
+        append: "增加规则",
+        exception: "增加例外规则",
+        deleteStr: "删除",
+        generateRule: "生成规则",
+        saveRule: "保存规则",
+        loadRule: "加载已保存的规则"
+    };
+
     window.selectHtml = '<select><option value="-go_lager">仓库</option><option value="go_group_2">团体仓库</option><option value="go_group">宝库</option><option value="go_keller">贮藏室</option><option value="npc">NPC</option></select>';
-    window.liHtml = '<li><input/>'+selectHtml+'<button onclick="addRule(this)">append</button><button onclick="addException(this)">exception</button><button onclick="deleteRule(this)">delete</button></li>';
+    window.liHtml = '<li><input/>'+selectHtml+'<button onclick="addRule(this)" class="button">'+wisMsg.append+'</button><button onclick="addException(this)" class="button">'+wisMsg.exception+'</button><button onclick="deleteRule(this)" class="button">'+wisMsg.deleteStr+'</button></li>';
     window.olHtml = '<ol>'+liHtml+'</ol>';
+    window.bsHtml = '<button onclick="wisGenerateRuleJsonI()" class="button">'+wisMsg.generateRule+'</button><button onclick="wisSaveRule()" class="button">'+wisMsg.saveRule+'</button><button onclick="wisLoadRule()" class="button">'+wisMsg.loadRule+'</button><br>';
+    window.taHtml = '<textarea id="wiscj" style="width:100%;height:5em;"></textarea>';
+    window.uiHtml = '<hr><div id="wisc" class="gadget_body">'+olHtml+bsHtml+taHtml+'</div>';
+    window.btnsHtml = '<div><button id="wisawrb" onclick="applyWisRule()" class="button">'+wisMsg.applySortRule+'</button><input id="wisar" type="checkbox" onclick="setAutoSort()"><label for="wisar">'+wisMsg.autoSort+'</label></div>';
 
     window.addRule = function (bu) {
         var li = $(bu).parent();
@@ -91,9 +99,13 @@ function main() {
 
     window.wisSaveRule = function () {
         var rule = $("#wiscj").val();
+        setCookie("wiscj",rule);
+    }
+
+    window.setCookie = function (key,value) {
         var now = new Date();
         now.setDate(now.getDate()+3456);
-        document.cookie = "wiscj="+escape(rule)+";expires="+now.toUTCString();
+        document.cookie = key+"="+escape(value)+";expires="+now.toUTCString();
     }
 
     window.wisLoadRule = function () {
@@ -136,9 +148,10 @@ function main() {
     }
 
     window.sort = function(t,o){
-        t.children().eq(2).children("select").val(o);
         if ("npc"==o) {
             t.children().eq(3).children("input:checkbox").attr('checked', true);
+        } else {
+            t.children().eq(2).children("select").val(o);
         }
     }
 
@@ -174,4 +187,24 @@ function main() {
         }
     }
 
+    window.setAutoSort = function (){
+        setCookie("wisas",0 != $("#wisar:checked").length);
+    }
+
+    window.autoSort = function (){
+        var c = getCookie("wisas");
+        if(c && "true"==c) {
+            $("#wisar").attr("checked", true);
+            $("#wisawrb").click();
+        }
+    }
+
+    window.injectUi = function (){
+        $("div#main_content").after(uiHtml);
+        $("div#main_content").after(btnsHtml);
+    }
+
+    window.addEventListener("load",injectUi,false);
+
+    window.addEventListener("load",autoSort,false);
 }
