@@ -1,10 +1,9 @@
 // ==UserScript==
 // @name       wod item sorter
 // @namespace  org.holer.webgame.util.wod
-// @version    0.0.7
+// @version    0.1.0
 // @description  auto sort items in inventory
 // @match      http://*.world-of-dungeons.org/wod/spiel/hero/items.php*
-// @match      http://localhost/x.htm
 // @copyright  2012+, Russell
 // ==/UserScript==
 
@@ -27,32 +26,36 @@ function main() {
         deleteStr: "delete",
         generateRule: "generate rule",
         saveRule: "save rule",
-        loadRule: "load rule"
+        loadRule: "load rule",
+        noLocalStorageSupport: "browser do not support localStorage, can't save settings"
     };
 
     window.wisMsg = {
         applySortRule: "整理",
         autoSort: "自动整理",
         append: "增加规则",
-        exception: "增加例外规则",
+        exception: "增加子规则",
         deleteStr: "删除",
         generateRule: "生成规则",
         saveRule: "保存规则",
-        loadRule: "加载已保存的规则"
+        loadRule: "加载已保存的规则",
+        noLocalStorageSupport: "浏览器不支持localStorage，无法保存设置。"
     };
 
-    window.selectHtml = '<select><option value="-go_lager">仓库</option><option value="go_group_2">团体仓库</option><option value="go_group">宝库</option><option value="go_keller">贮藏室</option><option value="npc">NPC</option></select>';
+    window.selectHtml = '<select><option value="NUL"></option><option value="go_lager">仓库</option><option value="go_group_2">团体仓库</option><option value="go_group">宝库</option><option value="go_keller">贮藏室</option><option value="npc">NPC</option></select>';
     window.liHtml = '<li><input/>'+selectHtml+'<button onclick="addRule(this)" class="button">'+wisMsg.append+'</button><button onclick="addException(this)" class="button">'+wisMsg.exception+'</button><button onclick="deleteRule(this)" class="button">'+wisMsg.deleteStr+'</button></li>';
     window.olHtml = '<ol>'+liHtml+'</ol>';
     window.bsHtml = '<button onclick="wisGenerateRuleJsonI()" class="button">'+wisMsg.generateRule+'</button><button onclick="wisSaveRule()" class="button">'+wisMsg.saveRule+'</button><button onclick="wisLoadRule()" class="button">'+wisMsg.loadRule+'</button><br>';
     window.taHtml = '<textarea id="wiscj" style="width:100%;height:5em;"></textarea>';
     window.uiHtml = '<hr><div id="wisc" class="gadget_body">'+olHtml+bsHtml+taHtml+'</div>';
     window.btnsHtml = '<div><button id="wisawrb" onclick="applyWisRule()" class="button">'+wisMsg.applySortRule+'</button><input id="wisar" type="checkbox" onclick="setAutoSort()"><label for="wisar">'+wisMsg.autoSort+'</label></div>';
+    window.eolHtml = '<ol></ol>';
 
     window.addRule = function (bu) {
         var li = $(bu).parent();
         li.after(liHtml);
     }
+
     window.addException = function (bu) {
         var li = $(bu).parent();
         var ol = li.children("ol");
@@ -62,6 +65,7 @@ function main() {
             li.append(olHtml);
         }
     }
+
     window.deleteRule = function (bu) {
         var li = $(bu).parent();
         li.remove();
@@ -99,59 +103,84 @@ function main() {
 
     window.wisSaveRule = function () {
         var rule = $("#wiscj").val();
-        setCookie("wiscj",rule);
+        setSetting("wiscj",rule);
+        ruleObj = null;
     }
 
-    window.setCookie = function (key,value) {
-        var now = new Date();
-        now.setDate(now.getDate()+3456);
-        document.cookie = key+"="+escape(value)+";expires="+now.toUTCString();
+    window.setSetting = function (key,value) {
+        localStorage.setItem(key,value);
     }
 
     window.wisLoadRule = function () {
-        var rule = getCookie("wiscj");
+        var rule = getSetting("wiscj");
         if (rule) {
             $("#wiscj").val(unescape(rule));
+            ruleObj = rule;
+            strToRegexI();
+            $("#wisc > ol > li").remove();
+            var olRoot = $("#wisc > ol");
+            jsonToGui(ruleObj.rules,olRoot);
         }
     }
 
-    window.getCookie = function (name) {
-        var equalSign = "=";
-        var start = document.cookie.indexOf( name + equalSign );
-        var len = start + name.length + equalSign.length;
-        if ((!start) && (name != document.cookie.substring(0, name.length))){
-            return null;
+    window.jsonToGui = function (rules,htmlElement) {
+        var c;
+        for(i in rules){
+            c = rules[i];
+            var nl = $(liHtml);
+            nl.children("input").val(c.n);
+            nl.children("select").val(c.o);
+            if (c.e) {
+                var eRoot = $(eolHtml);
+                nl.append(eRoot);
+                jsonToGui(c.e,eRoot);
+            }
+            htmlElement.append(nl);
         }
-        if (start == -1)
-            return null;
-        var end = document.cookie.indexOf(";", len);
-        if (end == -1)
-            end = document.cookie.length;
-        return unescape(document.cookie.substring(len, end));
+    }
+
+    window.getSetting = function (name) {
+        return localStorage.getItem(name);
     }
 
     window.ruleObj = null;
 
     window.applyWisRule = function () {
         if (!ruleObj)
-            ruleObj = getCookie("wiscj");
+            ruleObj = getSetting("wiscj");
         if (!ruleObj)
             return;
         strToRegexI();
-        $("table.content_table>tbody>tr").each(function () {
+        $("div.layout_clear > table.content_table > tbody > tr").each(function () {
             var t = $(this);
             var o = getOperation(t.children("td").eq(1).children("a").text(), ruleObj.rules);
             if (o) {
-                sort(t,o);
+                applyOperation(t,o);
             }
         });
+        $("#main_content form input[type='submit']:eq(0)").focus();
     }
 
-    window.sort = function(t,o){
+    window.applyOperation = function(t,o){
+        var s;
+        if ("NUL" == o) {
+            return;
+        }
+        var c;
         if ("npc"==o) {
-            t.children().eq(3).children("input:checkbox").attr('checked', true);
+            s = t.children().eq(3).children("input:checkbox");
+            s.attr('checked', true);
+            c = "rgba(255,34,34,0.9)";
+            s.parent().css("color",c);
+            t.children().eq(1).children("a").css("background-color",c);
         } else {
-            t.children().eq(2).children("select").val(o);
+            s = t.children().eq(2).children("select");
+            if ("-"+o != s.val()) {
+                s.val(o);
+                c = "rgba(127,127,127,0.5";
+                s.css("border-color",c);
+                t.children().eq(1).children("a").css("background-color",c);
+            }
         }
     }
 
@@ -188,11 +217,11 @@ function main() {
     }
 
     window.setAutoSort = function (){
-        setCookie("wisas",0 != $("#wisar:checked").length);
+        setSetting("wisas",0 != $("#wisar:checked").length);
     }
 
     window.autoSort = function (){
-        var c = getCookie("wisas");
+        var c = getSetting("wisas");
         if(c && "true"==c) {
             $("#wisar").attr("checked", true);
             $("#wisawrb").click();
@@ -202,6 +231,9 @@ function main() {
     window.injectUi = function (){
         $("div#main_content").after(uiHtml);
         $("div#main_content").after(btnsHtml);
+        if (!window.localStorage) {
+            $("#wiscj").val(wisMsg.noLocalStorageSupport);
+        }
     }
 
     window.addEventListener("load",injectUi,false);
