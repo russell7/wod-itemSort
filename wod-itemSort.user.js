@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name       wod item sorter
 // @namespace  org.holer.webgame.util.wod
-// @version    0.1.0
+// @version    0.1.3
 // @description  auto sort items in inventory
 // @match      http://*.world-of-dungeons.org/wod/spiel/hero/items.php*
+// @grant        none
 // @copyright  2012+, Russell
 // ==/UserScript==
 
@@ -11,7 +12,7 @@ var script = document.createElement('script');
 script.setAttribute("type", "application/javascript");
 script.setAttribute("src","http://code.jquery.com/jquery-1.7.1.min.js");
 var sie = document.body || document.head || document.documentElement;
-sie.appendChild(script);
+//sie.appendChild(script);
 
 script = document.createElement('script');
 script.appendChild(document.createTextNode('('+ main +')();'));
@@ -50,6 +51,8 @@ function main() {
     window.uiHtml = '<hr><div id="wisc" class="gadget_body">'+olHtml+bsHtml+taHtml+'</div>';
     window.btnsHtml = '<div><button id="wisawrb" onclick="applyWisRule()" class="button">'+wisMsg.applySortRule+'</button><input id="wisar" type="checkbox" onclick="setAutoSort()"><label for="wisar">'+wisMsg.autoSort+'</label></div>';
     window.eolHtml = '<ol></ol>';
+
+    window.sortAllHtml = '<button class="button" onclick="moveAll(this)" type="button" id="moveAllButton" >move</button><span> all to </span>' + selectHtml ;
 
     window.addRule = function (bu) {
         var li = $(bu).parent();
@@ -231,12 +234,32 @@ function main() {
     window.injectUi = function (){
         $("div#main_content").after(uiHtml);
         $("div#main_content").after(btnsHtml);
+        $("div#main_content div.gadget_body form div.layout_clear table.content_table thead tr.row0 td.paginator_row span.texttoken input:last").after(sortAllHtml);
         if (!window.localStorage) {
             $("#wiscj").val(wisMsg.noLocalStorageSupport);
+        }
+
+        var d = getSetting("defaultDestination");
+        if (d) {
+            $("#moveAllButton").next().next().val(d);
         }
     }
 
     window.addEventListener("load",injectUi,false);
 
     window.addEventListener("load",autoSort,false);
+
+    window.moveAll = function (t){
+        var dest = $(t).next().next().val();
+        setSetting("defaultDestination", dest);
+
+        $("div.layout_clear > table.content_table > tbody > tr").each(function () {
+            var t = $(this);
+            var s = t.children().eq(2).children("select");
+            s.val(dest);
+
+        });
+
+        $("#main_content form input[type='submit']:eq(0)").click();
+    }
 }
