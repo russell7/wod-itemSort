@@ -4,6 +4,8 @@
 // @version    0.1.4
 // @description  auto sort items in inventory
 // @match      http://*.world-of-dungeons.org/wod/spiel/hero/items.php*
+// @downloadURL http://userscripts.org/scripts/source/136896.user.js
+// @updateURL http://userscripts.org/scripts/source/136896.user.js
 // @grant        none
 // @copyright  2012+, Russell
 // ==/UserScript==
