@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       wod item sorter
 // @namespace  org.holer.webgame.util.wod
-// @version    0.1.3
+// @version    0.1.4
 // @description  auto sort items in inventory
 // @match      http://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // @grant        none
@@ -53,6 +53,14 @@ function main() {
     window.eolHtml = '<ol></ol>';
 
     window.sortAllHtml = '<button class="button" onclick="moveAll(this)" type="button" id="moveAllButton" >move</button><span> all to </span>' + selectHtml ;
+
+    window.counts = {
+        go_lager : 0,
+        go_group_2 : 0,
+        go_group : 0,
+        go_keller : 0,
+        npc : 0
+    };
 
     window.addRule = function (bu) {
         var li = $(bu).parent();
@@ -154,6 +162,7 @@ function main() {
         if (!ruleObj)
             return;
         strToRegexI();
+        resetCount();
         $("div.layout_clear > table.content_table > tbody > tr").each(function () {
             var t = $(this);
             var o = getOperation(t.children("td").eq(1).children("a").text(), ruleObj.rules);
@@ -161,7 +170,15 @@ function main() {
                 applyOperation(t,o);
             }
         });
-        $("#main_content form input[type='submit']:eq(0)").focus();
+        $("#main_content form input[type='submit']:eq(0)").focus().after("宝库 "+counts.go_group+" 团体仓库 "+counts.go_group_2+" NPC "+counts.npc);
+    }
+
+    window.resetCount = function () {
+        counts.go_lager = 0;
+        counts.go_group_2 = 0;
+        counts.go_group = 0;
+        counts.go_keller = 0;
+        counts.npc = 0;
     }
 
     window.applyOperation = function(t,o){
@@ -176,6 +193,7 @@ function main() {
             c = "rgba(255,34,34,0.9)";
             s.parent().css("color",c);
             t.children().eq(1).children("a").css("background-color",c);
+            counts.npc += 1;
         } else {
             s = t.children().eq(2).children("select");
             if ("-"+o != s.val()) {
@@ -183,6 +201,7 @@ function main() {
                 c = "rgba(127,127,127,0.5";
                 s.css("border-color",c);
                 t.children().eq(1).children("a").css("background-color",c);
+                counts[o] += 1;
             }
         }
     }
