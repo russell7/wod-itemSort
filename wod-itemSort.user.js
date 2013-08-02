@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       wod item sorter
 // @namespace  org.holer.webgame.util.wod
-// @version    0.1.4
+// @version    0.1.5
 // @description  auto sort items in inventory
 // @match      http://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // @downloadURL http://userscripts.org/scripts/source/136896.user.js
@@ -172,7 +172,7 @@ function main() {
                 applyOperation(t,o);
             }
         });
-        $("#main_content form input[type='submit']:eq(0)").focus().after("宝库 "+counts.go_group+" 团体仓库 "+counts.go_group_2+" NPC "+counts.npc);
+        $("#main_content form input[type='submit']:eq(0)").focus().after(" 宝库 "+counts.go_group+" 团体仓库 "+counts.go_group_2+" NPC "+counts.npc);
     }
 
     window.resetCount = function () {
@@ -200,7 +200,7 @@ function main() {
             s = t.children().eq(2).children("select");
             if ("-"+o != s.val()) {
                 s.val(o);
-                c = "rgba(127,127,127,0.5";
+                c = "rgba(127,127,127,0.5)";
                 s.css("border-color",c);
                 t.children().eq(1).children("a").css("background-color",c);
                 counts[o] += 1;
@@ -266,10 +266,6 @@ function main() {
         }
     }
 
-    window.addEventListener("load",injectUi,false);
-
-    window.addEventListener("load",autoSort,false);
-
     window.moveAll = function (t){
         var dest = $(t).next().next().val();
         setSetting("defaultDestination", dest);
@@ -283,4 +279,28 @@ function main() {
 
         $("#main_content form input[type='submit']:eq(0)").click();
     }
+
+    window.rowOnMouseColor  = function () {
+        $("div.layout_clear table.content_table tbody tr").each(function () {
+            $(this).addClass("tr_mouse");
+        });
+    }
+
+    function addGlobalStyle(css) {
+        var head, style;
+        head = document.getElementsByTagName('head')[0];
+        if (!head) { return; }
+        style = document.createElement('style');
+        style.type = 'text/css';
+        style.innerHTML = css;
+        head.appendChild(style);
+    }
+
+    addGlobalStyle('.tr_mouse:hover { background-color:rgba(248,248,23,0.5); }');
+
+    window.addEventListener("load",injectUi,false);
+
+    window.addEventListener("load",autoSort,false);
+
+    window.addEventListener("load", rowOnMouseColor,false);
 }
