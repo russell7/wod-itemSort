@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       wod item sorter
 // @namespace  org.holer.webgame.util.wod
-// @version    0.1.5
+// @version    0.1.6
 // @description  auto sort items in inventory
 // @match      http://*.world-of-dungeons.org/wod/spiel/hero/items.php*
 // @downloadURL http://userscripts.org/scripts/source/136896.user.js
@@ -284,6 +284,9 @@ function main() {
         $("div.layout_clear table.content_table tbody tr").each(function () {
             $(this).addClass("tr_mouse");
         });
+        $("div.gadget_body form table.content_table tbody tr").each(function () {
+            $(this).addClass("tr_mouse");
+        });
     }
 
     function addGlobalStyle(css) {
@@ -303,4 +306,5 @@ function main() {
     window.addEventListener("load",autoSort,false);
 
     window.addEventListener("load", rowOnMouseColor,false);
+
 }
